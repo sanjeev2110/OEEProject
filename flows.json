@@ -1,0 +1,459 @@
+[
+    {
+        "id": "d60fa7b0889b7b07",
+        "type": "group",
+        "z": "9940c475d65d5d7a",
+        "name": "OEE",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "7ea48f8aa45d7ecd",
+            "6b7221e78c96accc",
+            "a94b856d21ab6871",
+            "0130d6ebb4a18148",
+            "e3f711c30a5901ca"
+        ],
+        "x": 88,
+        "y": 113,
+        "w": 1438,
+        "h": 614
+    },
+    {
+        "id": "7ea48f8aa45d7ecd",
+        "type": "function",
+        "z": "9940c475d65d5d7a",
+        "g": "d60fa7b0889b7b07",
+        "name": "OEE Calculation",
+        "func": "let availability = flow.get(\"availability\");\nlet performance = flow.get(\"performance\");\nlet quality = flow.get(\"quality\");\n\nif (availability !== undefined && performance !== undefined && quality !== undefined) {\n    let oee = (availability / 100) * (performance / 100) * (quality / 100) * 100;\n    msg.payload = {\n        availability: availability.toFixed(2),\n        performance: performance.toFixed(2),\n        quality: quality.toFixed(2),\n        oee: oee.toFixed(2)\n    };\n    return msg;\n} else {\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 460,
+        "wires": [
+            [
+                "6b7221e78c96accc"
+            ]
+        ]
+    },
+    {
+        "id": "6b7221e78c96accc",
+        "type": "ui_gauge",
+        "z": "9940c475d65d5d7a",
+        "g": "d60fa7b0889b7b07",
+        "name": "",
+        "group": "e155ceba12417089",
+        "order": 11,
+        "width": 11,
+        "height": 4,
+        "gtype": "gage",
+        "title": "OEE",
+        "label": "%",
+        "format": "{{msg.payload.oee}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 1450,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "a94b856d21ab6871",
+        "type": "group",
+        "z": "9940c475d65d5d7a",
+        "g": "d60fa7b0889b7b07",
+        "name": "Availability",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "68fdc4960add47e3",
+            "2ed25047634877f2",
+            "59601d476af27d69",
+            "1bf33b954269a0aa",
+            "1f158d0613b66669"
+        ],
+        "x": 114,
+        "y": 139,
+        "w": 872,
+        "h": 242
+    },
+    {
+        "id": "68fdc4960add47e3",
+        "type": "mqtt in",
+        "z": "9940c475d65d5d7a",
+        "g": "a94b856d21ab6871",
+        "name": "",
+        "topic": "oee/shift_length",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "9fa8c7ac0cc2f43b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 220,
+        "y": 180,
+        "wires": [
+            [
+                "1bf33b954269a0aa"
+            ]
+        ]
+    },
+    {
+        "id": "2ed25047634877f2",
+        "type": "mqtt in",
+        "z": "9940c475d65d5d7a",
+        "g": "a94b856d21ab6871",
+        "name": "",
+        "topic": "oee/breaks",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "9fa8c7ac0cc2f43b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 280,
+        "wires": [
+            [
+                "1bf33b954269a0aa"
+            ]
+        ]
+    },
+    {
+        "id": "59601d476af27d69",
+        "type": "mqtt in",
+        "z": "9940c475d65d5d7a",
+        "g": "a94b856d21ab6871",
+        "name": "",
+        "topic": "oee/downtime",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "9fa8c7ac0cc2f43b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 210,
+        "y": 340,
+        "wires": [
+            [
+                "1bf33b954269a0aa"
+            ]
+        ]
+    },
+    {
+        "id": "1bf33b954269a0aa",
+        "type": "function",
+        "z": "9940c475d65d5d7a",
+        "g": "a94b856d21ab6871",
+        "name": " Calculating Availability",
+        "func": "let shift_length = flow.get(\"shift_length\");\nlet breaks = flow.get(\"breaks\");\nlet downtime = flow.get(\"downtime\");\n\nif (msg.topic === \"oee/shift_length\") {\n    shift_length = msg.payload;\n    flow.set(\"shift_length\", shift_length);\n} else if (msg.topic === \"oee/breaks\") {\n    breaks = msg.payload;\n    flow.set(\"breaks\", breaks);\n} else if (msg.topic === \"oee/downtime\") {\n    downtime = msg.payload;\n    flow.set(\"downtime\", downtime);\n}\n\nif (shift_length !== undefined && breaks !== undefined && downtime !== undefined) {\n    let planned_production_time = shift_length - breaks;\n    let run_time = planned_production_time - downtime;\n    flow.set(\"run_time\",run_time);\n    let availability = (run_time / planned_production_time) * 100;\n    flow.set(\"availability\", availability);\n    msg.payload = {\n        planned_production_time: planned_production_time,\n        run_time: run_time,\n        availability: availability.toFixed(2)\n    };\n\n    flow.set(\"shift_length\", undefined);\n    flow.set(\"breaks\", undefined);\n    flow.set(\"downtime\", undefined);\n\n    return msg;\n} else {\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 240,
+        "wires": [
+            [
+                "1f158d0613b66669",
+                "7ea48f8aa45d7ecd"
+            ]
+        ]
+    },
+    {
+        "id": "1f158d0613b66669",
+        "type": "ui_gauge",
+        "z": "9940c475d65d5d7a",
+        "g": "a94b856d21ab6871",
+        "name": "",
+        "group": "e155ceba12417089",
+        "order": 1,
+        "width": 5,
+        "height": 3,
+        "gtype": "gage",
+        "title": "avaliability",
+        "label": "units",
+        "format": "{{msg.payload.availability}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 890,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "9fa8c7ac0cc2f43b",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.emqx.io:1883",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "0130d6ebb4a18148",
+        "type": "group",
+        "z": "9940c475d65d5d7a",
+        "g": "d60fa7b0889b7b07",
+        "name": "Performance",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "edb66ad6b472aedc",
+            "60d492985df79685",
+            "d96a13825d80ec53"
+        ],
+        "x": 134,
+        "y": 419,
+        "w": 872,
+        "h": 82
+    },
+    {
+        "id": "edb66ad6b472aedc",
+        "type": "mqtt in",
+        "z": "9940c475d65d5d7a",
+        "g": "0130d6ebb4a18148",
+        "name": "",
+        "topic": "oee/ideal_cycle_time",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "9fa8c7ac0cc2f43b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 260,
+        "y": 460,
+        "wires": [
+            [
+                "60d492985df79685"
+            ]
+        ]
+    },
+    {
+        "id": "60d492985df79685",
+        "type": "function",
+        "z": "9940c475d65d5d7a",
+        "g": "0130d6ebb4a18148",
+        "name": "Performance Calculation",
+        "func": "let ideal_cycle_time = flow.get(\"ideal_cycle_time\");\nlet total_count = flow.get(\"total_count\");\nlet run_time = flow.get(\"run_time\");\n\nif (msg.topic === \"oee/ideal_cycle_time\") {\n    ideal_cycle_time = msg.payload;\n    flow.set(\"ideal_cycle_time\", ideal_cycle_time);\n} else if (msg.topic === \"oee/total_count\") {\n    total_count = msg.payload;\n    flow.set(\"total_count\", total_count);\n}\n\nif (ideal_cycle_time !== undefined && total_count !== undefined && run_time !== undefined) {\n    let performance = (ideal_cycle_time * total_count) / (run_time * 60) * 100;\n    flow.set(\"performance\", performance);\n    msg.payload = {\n        ideal_cycle_time: ideal_cycle_time,\n        total_count: total_count,\n        run_time: run_time,\n        performance: performance.toFixed(2)\n    };\n\n    return msg;\n} else {\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 460,
+        "wires": [
+            [
+                "d96a13825d80ec53",
+                "7ea48f8aa45d7ecd"
+            ]
+        ]
+    },
+    {
+        "id": "d96a13825d80ec53",
+        "type": "ui_gauge",
+        "z": "9940c475d65d5d7a",
+        "g": "0130d6ebb4a18148",
+        "name": "",
+        "group": "e155ceba12417089",
+        "order": 3,
+        "width": 5,
+        "height": 3,
+        "gtype": "gage",
+        "title": "performance",
+        "label": "%",
+        "format": "{{msg.payload.performance}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 910,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "e3f711c30a5901ca",
+        "type": "group",
+        "z": "9940c475d65d5d7a",
+        "g": "d60fa7b0889b7b07",
+        "name": "Quality",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "37dac42ffdd1c1a6",
+            "f79a52205da7ed23",
+            "d739d9b82347c86e",
+            "42622596f871444c"
+        ],
+        "x": 114,
+        "y": 559,
+        "w": 912,
+        "h": 142
+    },
+    {
+        "id": "37dac42ffdd1c1a6",
+        "type": "mqtt in",
+        "z": "9940c475d65d5d7a",
+        "g": "e3f711c30a5901ca",
+        "name": "",
+        "topic": "oee/total_count",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "9fa8c7ac0cc2f43b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 220,
+        "y": 600,
+        "wires": [
+            [
+                "d739d9b82347c86e",
+                "60d492985df79685"
+            ]
+        ]
+    },
+    {
+        "id": "f79a52205da7ed23",
+        "type": "mqtt in",
+        "z": "9940c475d65d5d7a",
+        "g": "e3f711c30a5901ca",
+        "name": "",
+        "topic": "oee/reject_count",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "9fa8c7ac0cc2f43b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 220,
+        "y": 660,
+        "wires": [
+            [
+                "d739d9b82347c86e"
+            ]
+        ]
+    },
+    {
+        "id": "d739d9b82347c86e",
+        "type": "function",
+        "z": "9940c475d65d5d7a",
+        "g": "e3f711c30a5901ca",
+        "name": "Calculating Quality",
+        "func": "let total_count = flow.get(\"total_count\");\nlet reject_count =flow.get(\"reject_count\");\n\nif (msg.topic === \"oee/total_count\"){\n    total_count = msg.payload;\n    flow.set(\"total_count\", total_count);\n} else if(msg.topic === \"oee/reject_count\"){\n    reject_count = msg.payload;\n    flow.set(\"reject_count\", reject_count)\n}\n\nif (total_count !== undefined && reject_count !== undefined) {\n    let good_count = total_count - reject_count;\n    let quality = (good_count / total_count) * 100;\n    flow.set(\"quality\", quality);\n    msg.payload = {\n        total_count: total_count,\n        reject_count: reject_count,\n        quality: quality.toFixed(2)\n    };\n\n    return msg;\n} else {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 660,
+        "wires": [
+            [
+                "42622596f871444c",
+                "7ea48f8aa45d7ecd"
+            ]
+        ]
+    },
+    {
+        "id": "42622596f871444c",
+        "type": "ui_gauge",
+        "z": "9940c475d65d5d7a",
+        "g": "e3f711c30a5901ca",
+        "name": "",
+        "group": "e155ceba12417089",
+        "order": 5,
+        "width": 5,
+        "height": 3,
+        "gtype": "gage",
+        "title": "Quality",
+        "label": "%",
+        "format": "{{msg.payload.quality}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 940,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "e155ceba12417089",
+        "type": "ui_group",
+        "name": "oee",
+        "tab": "e41c85c7958c2f78",
+        "order": 2,
+        "disp": true,
+        "width": 17,
+        "collapse": false
+    },
+    {
+        "id": "e41c85c7958c2f78",
+        "type": "ui_tab",
+        "name": "Oee test",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
